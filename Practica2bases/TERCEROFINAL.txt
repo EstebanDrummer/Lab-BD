@@ -1,0 +1,71 @@
+BEGIN
+EXECUTE IMMEDIATE 'CREATE TABLE punto(
+id_ number,
+coordx NUMBER, coordy NUMBER,
+PRIMARY KEY(id_))';
+EXCEPTION
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Error inesperado en la creacion de la tabla ' || SQLERRM);
+END;
+
+Drop table punto;
+
+CREATE OR REPLACE FUNCTION
+estacontenido (xa IN NUMBER,ya IN NUMBER,xb IN NUMBER,yb IN NUMBER,xc IN NUMBER,yc IN  NUMBER,xd IN NUMBER,yd IN NUMBER,x IN NUMBER,y IN NUMBER) 
+RETURN BOOLEAN IS
+n NUMBER :=4;
+r BOOLEAN :=FALSE;
+coorx number;
+coory number;
+vari  number;
+BEGIN
+execute immediate 'TRUNCATE TABLE punto';
+INSERT INTO punto VALUES(1,xa,ya);
+INSERT INTO punto VALUES(2,xb,yb);
+INSERT INTO punto VALUES(3,xc,yc);
+INSERT INTO punto VALUES(4,xd,yd);
+coory:=yd;
+coorx:=xd;
+FOR pun IN (SELECT * FROM punto /*where punto.id_ != 4*/) LOOP
+ IF (((pun.coordy<y) AND (coory >=y)) OR ((coory<y) AND pun.coordy>=y)) THEN
+ vari:=(pun.coordx+(y-pun.coordy)/((coory-pun.coordy)*(coorx - pun.coordx)));
+ IF (vari<x) THEN
+      r:= NOT r;
+  END IF;
+END IF;
+coory:=pun.coordy;
+coorx:=pun.coordx;     
+END LOOP;
+/**/
+IF (r=FALSE) THEN
+FOR pun IN (SELECT * FROM punto /*where punto.id_ != 4*/) LOOP
+ IF ((pun.coordx=x) AND (pun.coordy =y))  THEN
+  r:= NOT r;
+END IF;
+coory:=pun.coordy;
+coorx:=pun.coordx;     
+END LOOP;
+END IF;
+ dbms_output.put_line(
+   case
+      when r then 'ESTA'
+      when r is null then 'NULL'
+      else 'NO ESTÁ'
+   end
+);
+RETURN r;
+EXCEPTION
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Error Inesperado en el sistema :' || SQLERRM);
+END;
+/
+
+DECLARE
+ resul BOOLEAN;
+BEGIN                  /*estacontenido(xa,ya,xb,yb,xc,yc,yd,yd,x,y);*/ 
+ resul:= estacontenido(0,0,2,0,2.5,1,0.5,1,0,0.1);
+EXCEPTION
+   WHEN OTHERS THEN  
+     DBMS_OUTPUT.PUT_LINE ('Error Inesperado en el sistema :' || SQLERRM );
+END;
+/

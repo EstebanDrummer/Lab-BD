@@ -1,0 +1,50 @@
+
+BEGIN
+EXECUTE IMMEDIATE 'CREATE TABLE punto(
+id_ number,
+coordx NUMBER, coordy NUMBER,
+PRIMARY KEY(id_))';
+EXCEPTION
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Error inesperado en la creacion de la tabla ' || SQLERRM);
+END;
+
+Drop table punto;
+
+CREATE OR REPLACE FUNCTION
+estacontenido (xa IN NUMBER,ya IN NUMBER,xb IN NUMBER,yb IN NUMBER,xc IN NUMBER,yc IN  NUMBER,xd IN NUMBER,yd IN NUMBER,x IN NUMBER,y IN NUMBER) 
+RETURN BOOLEAN IS
+r BOOLEAN :=FALSE;
+BEGIN
+execute immediate 'TRUNCATE TABLE punto';
+INSERT INTO punto VALUES(1,xa,ya);
+INSERT INTO punto VALUES(2,xb,yb);
+INSERT INTO punto VALUES(3,xc,yc);
+INSERT INTO punto VALUES(4,xd,yd);
+IF(((xc>=x)AND(xa<=x)) AND((yc>=y)AND(ya<=y))AND ((xd>=x)AND(xb<=x)) AND((yd>=y)AND(yb<=y)))THEN
+ DBMS_OUTPUT.PUT_LINE ('Entre:' );
+      r:= NOT r;
+END IF;    
+ dbms_output.put_line(
+   case
+      when r then 'ESTA'
+      when r is null then 'NULL'
+      else 'NO ESTÁ'
+   end
+);
+RETURN r;
+EXCEPTION
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Error Inesperado en el sistema :' || SQLERRM);
+END;
+/
+
+DECLARE
+ resul BOOLEAN;
+BEGIN                  /*estacontenido(xa,ya,xb,yb,xc,yc,yd,yd,x,y);*/ 
+ resul:= estacontenido(0,0,2,0,2,1,0,1,0.1,0.1);
+EXCEPTION
+   WHEN OTHERS THEN  
+     DBMS_OUTPUT.PUT_LINE ('Error Inesperado en el sistema :' || SQLERRM );
+END;
+/

@@ -1,0 +1,104 @@
+CREATE TABLE conexion(
+cod_ciudad1 NUMBER(8),
+cod_ciudad2 NUMBER(8),
+empresa_transporte VARCHAR2(10),
+valor_pasaje NUMBER(8) NOT NULL CHECK(valor_pasaje > 0),
+PRIMARY KEY(cod_ciudad1, cod_ciudad2, empresa_transporte) 
+);
+truncate table conexion;
+INSERT INTO conexion VALUES(1, 2, 'Azul', 2);
+INSERT INTO conexion VALUES(1, 4, 'Gacela', 10);
+INSERT INTO conexion VALUES(1, 5, 'Ondas', 10);
+INSERT INTO conexion VALUES(2, 1, 'Azul', 4);
+INSERT INTO conexion VALUES(2, 3, 'Azul', 6);
+INSERT INTO conexion VALUES(2, 5, 'Gacela', 8);
+INSERT INTO conexion VALUES(3, 4, 'Ondas', 5);
+INSERT INTO conexion VALUES(4, 5, 'Azul', 3);
+INSERT INTO conexion VALUES(4, 1, 'Azul', 8);
+INSERT INTO conexion VALUES(5, 4, 'Azul', 2);
+
+create table Visitados (cuidad number(8), visitado varchar2(1));
+
+create table RutasFinales (ruta varchar2(200), costo number(8));
+
+
+create or replace procedure inicTablaVisitados is
+ingresado varchar2(1) := 0;
+begin
+for i in (select distinct cod_ciudad1 from conexion) loop
+insert into Visitados values (i.cod_ciudad1 , 0);
+end loop;
+for j in (select distinct cod_ciudad2 from conexion) loop
+  for k in (select ciudad from Visitados)loop
+    if (j.cod_ciudad2 = k.ciudad) then
+      ingresado := 1;
+    end if;
+  end loop;
+  if (ingresado = 0 )then
+    insert into Visitados values (j.cod_ciudad2 , 0);
+  end if;
+  ingresado :=0;
+end loop;
+end;
+/
+
+CREATE OR REPLACE PROCEDURE registrarVisita(n in visitados.ciudad%TYPE, estado in visitados.visitado%type)
+IS
+cursor actualizar IS select * from Visitados for update;
+lista_ciudades Visitados%ROWTYPE;
+begin
+open actualizar;
+loop
+fetch actualizar into lista_ciudades;
+if lista_ciudades.ciudad = n then
+  update Visitados set Visitados.visitado = estado where current of actualizar;  
+  exit;
+end if;
+exit when actualizar%NOTFOUND;
+end loop;
+close actualizar;
+END;
+/
+
+CREATE OR REPLACE procedure listarRecorridos(n number,estado number, costo number, ruta varchar2, destino varchar2) IS
+cam varchar2(100);
+valor number(8) := costo;
+BEGIN
+registrarVisita(n,estado);
+FOR ciud IN (SELECT * FROM conexion where (cod_ciudad1 = n)) LOOP
+  for dest in (select * from Visitados where ciudad = ciud.cod_ciudad2)loop
+  DBMS_OUTPUT.PUT_LINE('ruta : '|| ' sig ciudad: ' ||ciud.cod_ciudad2 );
+  
+  if (1 != dest.visitado)then
+    valor := ciud.valor_pasaje + costo; 
+    cam := ruta ||'(' ||ciud.empresa_transporte||') '|| '-' || ciud.cod_ciudad2 ;
+    DBMS_OUTPUT.PUT_LINE( 'ciudad: '||ciud.cod_ciudad2||' ruta: ' || cam || ' costo: '|| valor );
+    if (ciud.cod_ciudad2 = destino) then
+      INSERT INTO RutasFinales  VALUES ( cam , valor);
+    end if;
+    listarrecorridos(ciud.cod_ciudad2, 1,valor,cam,destino);
+     DBMS_OUTPUT.PUT_LINE('regreso: ' || ciud.cod_ciudad2);
+     registrarVisita(ciud.cod_ciudad2,0);
+  end if;
+  end loop;
+END LOOP;
+END;
+/
+
+
+create or replace procedure ejecutar(n number , m number) is
+ruta varchar2(100) := n;
+destino varchar2(100) := m;
+begin
+listarRecorridos(n ,1, 0, ruta, destino );
+creo que aca ... cuando el llega aca es porque termina la recursion
+end;
+/
+
+Select * From rutasfinales ;
+exec ejecutar(1 , 5);
+
+truncate table Visitados; 
+truncate table RutasFinales; 
+exec inicTablaVisitados;
+select * from CONEXION;

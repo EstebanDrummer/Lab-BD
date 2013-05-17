@@ -1,0 +1,63 @@
+CREATE TABLE componente(producto NUMBER(8),producto_que_lo_compone NUMBER(8),PRIMARY KEY(producto, producto_que_lo_compone),CHECK (producto <> producto_que_lo_compone));
+INSERT INTO componente VALUES(1, 8); 
+INSERT INTO componente VALUES(1, 9);
+INSERT INTO componente VALUES(1, 12);
+INSERT INTO componente VALUES(5, 12); 
+INSERT INTO componente VALUES(5, 14);
+INSERT INTO componente VALUES(7, 14); 
+INSERT INTO componente VALUES(7, 24);
+INSERT INTO componente VALUES(9, 34);
+INSERT INTO componente VALUES(12, 50);
+INSERT INTO componente VALUES(12, 61);
+INSERT INTO componente VALUES(14, 32);
+INSERT INTO componente VALUES(24, 32);
+INSERT INTO componente VALUES(34, 74);
+INSERT INTO componente VALUES(50, 74);
+
+truncate table componente;
+
+create table Auxiliar (prod number(8) , niv number(8)); 
+truncate table auxiliar; 
+
+CREATE OR REPLACE procedure listarComp(n number, nivel number) IS 
+BEGIN FOR comp IN (SELECT producto_que_lo_compone FROM componente where (producto = n)) LOOP 
+insert into Auxiliar values(comp.producto_que_lo_compone, nivel); 
+listarComp(comp.producto_que_lo_compone, nivel+1); 
+END LOOP;
+EXCEPTION
+WHEN NO_DATA_FOUND THEN
+DBMS_OUTPUT.PUT_LINE(' Error al consultar los datos ');
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Error Inesperado en el sistema :' || SQLERRM);
+END; 
+/
+
+/*create or replace procedure crearTablaAuxiliar is 
+BEGIN EXECUTE IMMEDIATE 'CREATE TABLE Auxiliar( val NUMBER(8),nivel NUMBER(8))';
+EXCEPTION WHEN OTHERS THEN DBMS_OUTPUT.PUT_LINE('Error Inesperado en el sistema :' ||
+SQLERRM); END; */
+/
+
+create or replace procedure punto2(n number) is 
+nivel number :=1;
+respuesta varchar2(50);
+begin 
+listarComp(n , nivel);
+FOR a1 IN (SELECT distinct niv FROM Auxiliar ) LOOP 
+  respuesta := 'Hijos de '|| a1.niv ||'er nivel: ';
+FOR a2 IN (SELECT distinct * FROM Auxiliar ) LOOP 
+if(a1.niv = a2.niv) then
+  respuesta := respuesta || ' '|| a2.prod; end if;
+END LOOP; 
+DBMS_OUTPUT.PUT_LINE(respuesta); 
+END LOOP;
+execute immediate 'TRUNCATE table Auxiliar'; 
+EXCEPTION
+WHEN NO_DATA_FOUND THEN
+DBMS_OUTPUT.PUT_LINE(' Error al consultar los datos ');
+WHEN OTHERS THEN
+DBMS_OUTPUT.PUT_LINE('Error Inesperado en el sistema :' || SQLERRM);
+end; 
+/
+
+exec punto2(1)
